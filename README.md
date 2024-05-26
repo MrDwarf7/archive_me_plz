@@ -10,7 +10,7 @@ We can make it better - Time to clean up the mess and archive those files!
 ## Usage
 
 ```bash
-archive_me_plz <qualifier> <archive_name> <directory>
+archive_me_plz <qualifier> <oldest_to_keep> <directory_path>
 ```
 
 ### Example
@@ -21,7 +21,7 @@ archive_me_plz 2020-01-01 "Archive 2020" /path/to/directory
 
 ## Qualifiers
 
-Qualifiers are used to determine if the files within the given directory should be archived or not. 
+Qualifiers are used to determine if the files within the given directory should be archived or not.
 The qualifier is the first argument passed to the program.
 
 This is a work in progress, but the idea is to have a way to filter out whole directories based on a condition.
