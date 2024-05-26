@@ -16,7 +16,7 @@ archive_me_plz <qualifier> <oldest_to_keep> <directory_path>
 ### Example
 
 ```bash
-archive_me_plz 2020-01-01 "Archive 2020" /path/to/directory
+archive_me_plz 52 2024-01-01 '/path/to/directory'
 ```
 
 ## Qualifiers
