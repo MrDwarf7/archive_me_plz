@@ -9,7 +9,7 @@ pub struct W<T>(pub T);
 
 pub const ARCHIVE_FOLDER_NAME: &str = "_archive";
 
-pub const SUPPORTED_EXTENSIONS: [&str; 4] = ["xlsx", "csv", "xls", "xlsm"];
+// pub const SUPPORTED_EXTENSIONS: [&str; 4] = ["xlsx", "csv", "xls", "xlsm"];
 
 pub const HELP_TEXT: &str = r#"
 Usage: archive_me_plz [qualifier oldest_to_keep folder_path] -> [output]
