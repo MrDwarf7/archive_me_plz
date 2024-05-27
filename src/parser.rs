@@ -1,6 +1,6 @@
+use crate::{prelude::HELP_TEXT, Error, Result};
 use chrono::NaiveDate;
 use std::{path::PathBuf, str::FromStr};
-use crate::{prelude::HELP_TEXT, Error, Result};
 
 pub enum ArgumentIn {
     Amount,
@@ -26,7 +26,7 @@ impl FromStr for ArgumentIn {
 
 #[derive(Debug, Default, PartialEq)]
 pub struct UserInput {
-    pub required_min_files: u16,
+    pub required_min_files: usize,
     pub oldest_to_keep: NaiveDate,
     pub folder_path: PathBuf,
 }
@@ -39,7 +39,7 @@ impl UserInput {
         args.remove(0);
 
         if args.is_empty() {
-            user_input.help_and_exit()
+            UserInput::help_and_exit()
         }
 
         let de_dashed_args = args
@@ -47,11 +47,10 @@ impl UserInput {
             .map(|arg| {
                 if arg.starts_with('-') {
                     arg.trim_start_matches('-').to_string()
+                } else if arg.starts_with("--") {
+                    arg.trim_start_matches("--").to_string()
                 } else {
-                    match arg.starts_with("--") {
-                        true => arg.trim_start_matches("--").to_string(),
-                        false => arg.to_string(),
-                    }
+                    arg.to_string()
                 }
             })
             .collect::<Vec<String>>();
@@ -59,7 +58,7 @@ impl UserInput {
         let _ = match de_dashed_args.len() {
             1 => {
                 if de_dashed_args[0] == "help" {
-                    user_input.help_and_exit()
+                    UserInput::help_and_exit()
                 } else {
                     return Err(Error::OnlyProvidedOneArgument);
                 }
@@ -89,9 +88,8 @@ impl UserInput {
         }
     }
 
-    fn help_and_exit(&self) -> ! {
-        println!("{}", HELP_TEXT);
+    fn help_and_exit() -> ! {
+        println!("{HELP_TEXT}");
         std::process::exit(0);
     }
-
 }
