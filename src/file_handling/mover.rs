@@ -1,7 +1,12 @@
-use crate::prelude::ARCHIVE_FOLDER_NAME;
-use crate::{Result, UserInput};
+#![allow(dead_code)]
 
+use crate::prelude::ARCHIVE_FOLDER_NAME;
+use crate::{Error, Result, UserInput};
+
+use futures::{stream, StreamExt};
+use rayon::prelude::*;
 use std::path::PathBuf;
+use std::sync::Arc;
 use tokio::fs::create_dir_all;
 
 #[derive(Clone)]
@@ -15,66 +20,191 @@ impl<'a> Mover<'a> {
     }
 }
 
-// #[async_trait]
 impl<'a> Mover<'a> {
-    pub async fn move_files(&self, files: &[PathBuf]) -> Result<()> {
-        let file_len = files.len();
-        let (tx, mut rx) = tokio::sync::mpsc::channel(file_len);
+    // PERF: This is currently the fastest method for moving files by far -
+    pub async fn par_move_files_copy(&self, files: &[PathBuf]) -> Result<()> {
+        let archive = Arc::new(self.input.folder_path.clone().join(ARCHIVE_FOLDER_NAME));
+        create_dir_all(&*archive).await?;
 
-        let archive = self.input.folder_path.clone().join(ARCHIVE_FOLDER_NAME);
+        let chunk_size = (files.len() / 6).max(1);
+        let file_chunks: Vec<&[PathBuf]> = files.chunks(chunk_size).collect();
+        let handle = tokio::runtime::Handle::current();
 
-        dbg!(archive.clone());
+        let results: Vec<_> = file_chunks
+            .into_par_iter()
+            .map(|chunk| {
+                let archive = Arc::clone(&archive);
+                let handle = handle.clone();
+                handle.block_on(async move {
+                    stream::iter(chunk)
+                        .map(|file| {
+                            let archive = Arc::clone(&archive);
+                            async move {
+                                let file_name = file.file_name().unwrap();
+                                println!("Moving file: {:?}", file_name);
 
-        create_dir_all(&archive).await?;
+                                let archive_path = archive.join(file_name);
+                                tokio::fs::copy(file, &archive_path).await?;
 
-        // let mut handles: Vec<JoinHandle<std::prelude::v1::Result<(), _>>> = Vec::new();
-
-        (0..file_len).for_each(|file| {
-            let file = files[file].clone();
-            let archive = archive.clone();
-
-            let tx = tx.clone();
-            println!("1 file: {:?}", file);
-
-            tokio::spawn(async move {
-                let file_name = file.file_name().unwrap();
-                let archive = archive.join(file_name);
-
-                println!("1.5 file: {:?}", file);
-
-                let rename_fut = tokio::join!(tokio::fs::rename(file, archive)).0;
-                // let rename_fut = tokio::fs::rename(file, archive).into_future();
-
-                let _ = tokio::spawn(async move {
-                    let _ = tx.send(rename_fut).await;
-                    println!("2 length: {:?}", file_len);
-                    drop(tx)
+                                match Self::check_files(
+                                    &[file.to_owned()],
+                                    &[archive_path.to_owned()],
+                                )
+                                .await
+                                .is_ok()
+                                {
+                                    true => Ok(tokio::fs::remove_file(file).await),
+                                    false => Err(Error::CopiedFilesDontMatch),
+                                }
+                                // Ok(())
+                                // tokio::fs::remove_file(file).await
+                            }
+                        })
+                        .buffer_unordered(chunk.len())
+                        .collect::<Vec<_>>()
+                        .await
                 })
-                .await;
-            });
+            })
+            .collect();
 
-            // let _ = tx.send(handle).await;
-            // drop(tx);
-            // handles.push(handle);
-        });
-
-        tokio::spawn(async move {
-            for _i in 0..file_len {
-                println!("3 Waiting for file to be moved");
-                println!("4 Files left: {:?}", rx.len());
-                println!("5 iter val: {:?}", _i);
-                while let Ok(h) = rx.try_recv() {
-                    h.unwrap();
-                }
+        let mut success_count = 0;
+        for result in results.into_iter().flatten() {
+            match result {
+                Ok(_) => success_count += 1,
+                Err(e) => eprintln!("Error: {e}"),
             }
-            rx.close();
-        })
-        .await?;
+        }
 
-        // for h in handles {
-        //     h.await??;
-        // }
-
-        Ok(())
+        if success_count >= self.input.required_min_files {
+            Ok(())
+        } else {
+            Err(Error::InvalidInput)
+        }
     }
 }
+
+// region:		--- helper
+impl<'a> Mover<'a> {
+    pub async fn check_files(files_original: &[PathBuf], files_archive: &[PathBuf]) -> Result<()> {
+        let original_names = files_original
+            .iter()
+            .map(|file| file.file_name().unwrap())
+            .collect::<Vec<_>>();
+        let archive_names = files_archive
+            .iter()
+            .map(|file| file.file_name().unwrap())
+            .collect::<Vec<_>>();
+
+        let mut success_count = 0;
+        for (original, archive) in original_names.iter().zip(archive_names.iter()) {
+            if original == archive {
+                success_count += 1;
+            } else {
+                eprintln!("Error: Files don't match: {:?} != {:?}", original, archive);
+            }
+        }
+
+        assert_eq!(original_names.len(), archive_names.len());
+        assert_eq!(original_names.len(), success_count);
+        assert_eq!(archive_names.len(), success_count);
+
+        if success_count == original_names.len() {
+            Ok(())
+        } else {
+            Err(Error::CopiedFilesDontMatch)
+        }
+    }
+}
+// endregion:	--- helper
+
+// region:		--- depr. methods
+
+impl<'a> Mover<'a> {
+    // DEPR:
+    pub async fn par_move_files(&self, files: &[PathBuf]) -> Result<()> {
+        let archive = Arc::new(self.input.folder_path.clone().join(ARCHIVE_FOLDER_NAME));
+        create_dir_all(&*archive).await?;
+
+        let chunk_size = (files.len() / 6).max(1);
+        let file_chunks: Vec<&[PathBuf]> = files.chunks(chunk_size).collect();
+        let handle = tokio::runtime::Handle::current();
+
+        let results: Vec<_> = file_chunks
+            .into_par_iter()
+            .map(|chunk| {
+                let archive = Arc::clone(&archive);
+                let handle = handle.clone();
+                handle.block_on(async move {
+                    stream::iter(chunk)
+                        .map(|file| {
+                            let archive = Arc::clone(&archive);
+                            async move {
+                                let file_name = file.file_name().unwrap();
+                                println!("Moving file: {:?}", file_name);
+                                let archive_path = archive.join(file_name);
+                                tokio::fs::rename(file, archive_path).await
+                            }
+                        })
+                        .buffer_unordered(chunk.len())
+                        .collect::<Vec<_>>()
+                        .await
+                })
+            })
+            .collect();
+
+        let mut success_count = 0;
+        for result in results.into_iter().flatten() {
+            match result {
+                Ok(_) => success_count += 1,
+                Err(e) => eprintln!("Error: {e}"),
+            }
+        }
+
+        if success_count >= self.input.required_min_files {
+            Ok(())
+        } else {
+            Err(Error::InvalidInput)
+        }
+    }
+
+    // DEPR:
+    pub async fn chunked_move_files(&self, files: &[PathBuf]) -> Result<()> {
+        let archive = Arc::new(self.input.folder_path.clone().join(ARCHIVE_FOLDER_NAME));
+        create_dir_all(&*archive).await?;
+
+        let max_concur_tasks = 50;
+
+        let results = stream::iter(files)
+            .map(|file| {
+                let archive = Arc::clone(&archive);
+                async move {
+                    let file_name = file.file_name().unwrap();
+                    let archive_path = archive.join(file_name);
+                    let start = tokio::time::Instant::now();
+                    let result = tokio::fs::rename(file, archive_path).await;
+                    let duration = start.elapsed();
+                    println!("Moved file: {:?} in {:?}", file_name, duration);
+                    result
+                }
+            })
+            // .buffer_unordered(file_len)
+            .buffer_unordered(max_concur_tasks)
+            .collect::<Vec<_>>()
+            .await;
+
+        let mut success_count = 0;
+        for result in results {
+            match result {
+                Ok(_) => success_count += 1,
+                Err(e) => eprintln!("Error: {e}"),
+            }
+        }
+
+        if success_count >= self.input.required_min_files {
+            Ok(())
+        } else {
+            Err(Error::InvalidInput)
+        }
+    }
+}
+// endregion:	--- depr. methods
