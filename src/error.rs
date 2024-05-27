@@ -32,6 +32,9 @@ pub enum Error {
 
     #[error("Tokio join error while printing to std_out")]
     TokioJoinError(#[from] tokio::task::JoinError),
+
+    #[error("Copied files and files to delete don't match, aborting")]
+    CopiedFilesDontMatch,
 }
 
 impl From<std::io::Error> for Error {
