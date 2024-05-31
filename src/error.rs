@@ -35,6 +35,12 @@ pub enum Error {
 
     #[error("Copied files and files to delete don't match, aborting")]
     CopiedFilesDontMatch,
+
+    #[error("No files found in given directory")]
+    NoFilesFoundInGivenDir,
+
+    #[error("No files found in given directory or no files to move")]
+    NoFilesOutsideOfGivenBounds,
 }
 
 impl From<std::io::Error> for Error {

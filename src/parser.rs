@@ -1,6 +1,7 @@
 use crate::{prelude::HELP_TEXT, Error, Result};
 use chrono::NaiveDate;
 use std::{path::PathBuf, str::FromStr};
+use tracing::{debug, warn};
 
 pub enum ArgumentIn {
     Amount,
@@ -32,13 +33,15 @@ pub struct UserInput {
 }
 
 impl UserInput {
+    // #[tracing::instrument("debug")]
     pub fn from_user_input(mut args: Vec<String>) -> Result<Self> {
         let mut user_input = UserInput::default();
-
-        println!("{:?}", &args);
         args.remove(0);
 
+        dbg!(&args);
+
         if args.is_empty() {
+            warn!("No arguments provided");
             UserInput::help_and_exit()
         }
 
@@ -58,6 +61,7 @@ impl UserInput {
         let _ = match de_dashed_args.len() {
             1 => {
                 if de_dashed_args[0] == "help" {
+                    warn!("Help requested");
                     UserInput::help_and_exit()
                 } else {
                     return Err(Error::OnlyProvidedOneArgument);
@@ -74,12 +78,13 @@ impl UserInput {
         }
         .collect::<Vec<_>>();
 
-        dbg!(&user_input);
+        // dbg!(&user_input);
 
         Ok(user_input)
     }
 
     fn by_index(&mut self, index: usize, value: &str) {
+        debug!("Index: {:?}, Value: {:?}", index, value);
         match index {
             0 => self.required_min_files = value.parse().expect("Failed to parse int"),
             1 => self.oldest_to_keep = NaiveDate::from_str(value).expect("Failed to parse date"),

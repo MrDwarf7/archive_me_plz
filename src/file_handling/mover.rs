@@ -8,8 +8,9 @@ use rayon::prelude::*;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::fs::create_dir_all;
+use tracing::{debug, error, info};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Mover<'a> {
     input: &'a UserInput,
 }
@@ -22,6 +23,7 @@ impl<'a> Mover<'a> {
 
 impl<'a> Mover<'a> {
     // PERF: This is currently the fastest method for moving files by far -
+    // #[tracing::instrument]
     pub async fn par_move_files_copy(&self, files: &[PathBuf]) -> Result<()> {
         let archive = Arc::new(self.input.folder_path.clone().join(ARCHIVE_FOLDER_NAME));
         create_dir_all(&*archive).await?;
@@ -41,10 +43,12 @@ impl<'a> Mover<'a> {
                             let archive = Arc::clone(&archive);
                             async move {
                                 let file_name = file.file_name().unwrap();
-                                println!("Moving file: {:?}", file_name);
+
+                                info!("Moving file: {:?}", &file_name);
 
                                 let archive_path = archive.join(file_name);
                                 tokio::fs::copy(file, &archive_path).await?;
+                                tokio::task::yield_now().await;
 
                                 match Self::check_files(
                                     &[file.to_owned()],
@@ -56,8 +60,6 @@ impl<'a> Mover<'a> {
                                     true => Ok(tokio::fs::remove_file(file).await),
                                     false => Err(Error::CopiedFilesDontMatch),
                                 }
-                                // Ok(())
-                                // tokio::fs::remove_file(file).await
                             }
                         })
                         .buffer_unordered(chunk.len())
@@ -71,7 +73,7 @@ impl<'a> Mover<'a> {
         for result in results.into_iter().flatten() {
             match result {
                 Ok(_) => success_count += 1,
-                Err(e) => eprintln!("Error: {e}"),
+                Err(e) => error!("Error: {e}"),
             }
         }
 
@@ -99,8 +101,9 @@ impl<'a> Mover<'a> {
         for (original, archive) in original_names.iter().zip(archive_names.iter()) {
             if original == archive {
                 success_count += 1;
+                debug!("Files match: {:?} == {:?}", original, archive);
             } else {
-                eprintln!("Error: Files don't match: {:?} != {:?}", original, archive);
+                error!("Error: Files don't match: {:?} != {:?}", original, archive);
             }
         }
 
@@ -118,7 +121,6 @@ impl<'a> Mover<'a> {
 // endregion:	--- helper
 
 // region:		--- depr. methods
-
 impl<'a> Mover<'a> {
     // DEPR:
     pub async fn par_move_files(&self, files: &[PathBuf]) -> Result<()> {

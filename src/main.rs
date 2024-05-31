@@ -5,9 +5,7 @@
 // should then be able to put the tool in the root, and with the "Qualifier" flag,
 // it should be able to run the tool on the root, and all subdirectories
 // and only moving items etc. when there are X amount of files in the folder
-
 // Create printer/logger for the tool
-
 // Add tests
 
 // Additions: ----------
@@ -28,38 +26,41 @@ mod parser;
 mod prelude;
 
 pub use self::prelude::{Error, Result, W};
-
 use parser::UserInput;
+use tracing::{debug, error, info};
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        // .pretty()
+        .init();
+
     let args = std::env::args().collect::<Vec<String>>();
     let user_input = UserInput::from_user_input(args)?;
 
     let start = tokio::time::Instant::now();
     if let Err(e) = tokio::join!(begin_processing(user_input)).0 {
-        eprintln!("Error: {e}");
+        debug!("From within main, caught error: {e}");
+        error!("Error: {e}");
     };
 
     let duration = start.elapsed();
-    println!("->> {:<12} - TOTAL TIME", duration.as_secs_f64());
-
-    // if let Err(e) = begin_processing(user_input).await {
-    //     eprintln!("Error: {e}");
-    // }
+    info!("{}", duration.as_secs_f64());
 
     Ok(())
 }
 
+// #[tracing::instrument]
 async fn begin_processing(input: UserInput) -> Result<()> {
     let processor = file_handling::Processor::new(&input);
-    println!("->> {:<12} -  processor created", "BEGIN_PROCESSING");
+    // info!("->> {:<12} - processor created", "BEGIN_PROCESSING");
 
     let mover = file_handling::Mover::new(&input);
-    println!("->> {:<12} - mover created", "BEGIN_PROCESSING");
+    // info!("->> {:<12} - mover created", "BEGIN_PROCESSING");
 
     let files = processor.process().await?;
-    println!("->> {:<12} - DIR PROCESSED", "LAST STAGE - MOVE");
+    // info!("->> {:<12} - DIR PROCESSED", "LAST STAGE - MOVE");
 
     mover.par_move_files_copy(files.as_slice()).await?;
     println!("->> {:<12} - MOVE PROCESSED", "COMPLETED");
