@@ -32,7 +32,7 @@ use tracing::{debug, error, info};
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
+        .with_max_level(tracing::Level::ERROR)
         // .pretty()
         .init();
 
@@ -46,14 +46,19 @@ async fn main() -> Result<()> {
     };
 
     let duration = start.elapsed();
-    info!("{}", duration.as_secs_f64());
+
+    if tracing_subscriber::filter::LevelFilter::current() >= tracing::Level::INFO {
+        info!("Time taken: {:?}", duration);
+    } else {
+        println!("{}", duration.as_secs_f64());
+    }
 
     Ok(())
 }
 
 // #[tracing::instrument]
 async fn begin_processing(input: UserInput) -> Result<()> {
-    let processor = file_handling::Processor::new(&input);
+    let processor = file_handling::PreProcessor::new(&input);
     // info!("->> {:<12} - processor created", "BEGIN_PROCESSING");
 
     let mover = file_handling::Mover::new(&input);
