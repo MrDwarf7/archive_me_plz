@@ -50,6 +50,9 @@ impl<'a> Mover<'a> {
                                 tokio::fs::copy(file, &archive_path).await?;
                                 tokio::task::yield_now().await;
 
+                                // REFACTOR: this shouldn't check the entire
+                                // list of files in the dir every single time
+                                // it moves a file, check that after we finish iterating
                                 match Self::check_files(
                                     &[file.to_owned()],
                                     &[archive_path.to_owned()],
@@ -67,6 +70,7 @@ impl<'a> Mover<'a> {
                         .await
                 })
             })
+            .flatten()
             .collect();
 
         let mut success_count = 0;
@@ -89,11 +93,11 @@ impl<'a> Mover<'a> {
 impl<'a> Mover<'a> {
     pub async fn check_files(files_original: &[PathBuf], files_archive: &[PathBuf]) -> Result<()> {
         let original_names = files_original
-            .iter()
+            .par_iter()
             .map(|file| file.file_name().unwrap())
             .collect::<Vec<_>>();
         let archive_names = files_archive
-            .iter()
+            .par_iter()
             .map(|file| file.file_name().unwrap())
             .collect::<Vec<_>>();
 
