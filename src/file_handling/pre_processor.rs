@@ -40,20 +40,20 @@ impl Extensions {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Processor<'a> {
+pub struct PreProcessor<'a> {
     input: &'a UserInput,
     ext: Vec<Extensions>,
 }
 
-impl<'a> Processor<'a> {
+impl<'a> PreProcessor<'a> {
     pub fn new(input: &'a UserInput) -> Self {
         let ext = Extensions::generate_set();
-        Processor { input, ext }
+        PreProcessor { input, ext }
     }
 }
 
 // #[async_trait]
-impl<'a> Processor<'a> {
+impl<'a> PreProcessor<'a> {
     // #[tracing::instrument]
     pub async fn process(&self) -> Result<Vec<PathBuf>> {
         if self.input.folder_path.is_dir() {
@@ -108,7 +108,10 @@ impl<'a> Processor<'a> {
             }
         });
 
-        info!("Total files processed via Processor<'a>: {:?}", files.len());
+        info!(
+            "Total files processed via PreProcessor<'a>: {:?}",
+            files.len()
+        );
         // println!("Files processed: {:?}", files.len());
 
         if files.len() >= self.input.required_min_files {

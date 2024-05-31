@@ -1,8 +1,8 @@
 mod mover;
-mod processor;
+mod pre_processor;
 
 pub use mover::Mover;
-pub use processor::Processor;
+pub use pre_processor::PreProcessor;
 
 // use crate::Result;
 // use std::path::{Path, PathBuf};
