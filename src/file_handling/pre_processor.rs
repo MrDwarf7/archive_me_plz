@@ -14,6 +14,7 @@ pub enum Extensions {
     Csv,
     Xls,
     Xlsm,
+    Txt,
 }
 
 impl Extensions {
@@ -23,6 +24,7 @@ impl Extensions {
             Extensions::Csv,
             Extensions::Xls,
             Extensions::Xlsm,
+            Extensions::Txt,
         ]
     }
 
@@ -34,6 +36,7 @@ impl Extensions {
             "csv" => Some(Extensions::Csv),
             "xls" => Some(Extensions::Xls),
             "xlsm" => Some(Extensions::Xlsm),
+            "txt" => Some(Extensions::Txt),
             _ => None,
         }
     }
