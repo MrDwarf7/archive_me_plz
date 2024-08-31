@@ -121,18 +121,15 @@ impl<'a> PreProcessor<'a> {
 
     #[allow(dead_code)]
     async fn print_files(files: Vec<PathBuf>) -> Result<()> {
-        let mut std_out = tokio::io::stdout();
+        let std_out = tokio::io::stdout();
+        let mut buffer = tokio::io::BufWriter::new(std_out);
 
         for file in files {
-            std_out.write_all(b"File: ").await?;
-            std_out
-                .write_all(file.to_str().unwrap().as_bytes())
-                .await
-                .unwrap();
-            std_out.write_all(b"\n").await?;
+            buffer
+                .write_all(format!("File: {}\n", file.to_str().unwrap()).as_bytes())
+                .await?;
         }
-
-        std_out.flush().await?;
+        buffer.flush().await?;
         Ok(())
     }
 
