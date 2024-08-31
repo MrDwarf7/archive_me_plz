@@ -55,10 +55,10 @@ async fn main() -> Result<()> {
 
 // #[tracing::instrument]
 async fn begin_processing(input: UserInput) -> Result<()> {
-    let processor = file_handling::PreProcessor::new(&input);
+    let processor = PreProcessor::new(&input);
     // info!("->> {:<12} - processor created", "BEGIN_PROCESSING");
 
-    let mover = file_handling::Mover::new(&input);
+    let mover = Mover::new(&input);
     // info!("->> {:<12} - mover created", "BEGIN_PROCESSING");
 
     let files = processor.process().await?;
