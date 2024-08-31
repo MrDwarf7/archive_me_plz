@@ -15,6 +15,8 @@ pub enum Extensions {
     Xls,
     Xlsm,
     Txt,
+    Tmp,
+    Eml,
 }
 
 impl Extensions {
@@ -25,6 +27,8 @@ impl Extensions {
             Extensions::Xls,
             Extensions::Xlsm,
             Extensions::Txt,
+            Extensions::Tmp,
+            Extensions::Eml,
         ]
     }
 
@@ -37,6 +41,8 @@ impl Extensions {
             "xls" => Some(Extensions::Xls),
             "xlsm" => Some(Extensions::Xlsm),
             "txt" => Some(Extensions::Txt),
+            "tmp" => Some(Extensions::Tmp),
+            "eml" => Some(Extensions::Eml),
             _ => None,
         }
     }
