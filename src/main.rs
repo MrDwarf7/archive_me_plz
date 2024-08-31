@@ -20,14 +20,11 @@
 //
 // We could end up with severe backpressure, or the system could run out of resources?
 
-mod error;
-mod file_handling;
-mod parser;
-mod prelude;
+// pub use self::prelude::{Error, Result, W};
+// use parser::UserInput;
+// use tracing::{debug, error, info};
 
-pub use self::prelude::{Error, Result, W};
-use parser::UserInput;
-use tracing::{debug, error, info};
+use archive_me_plz::*;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
