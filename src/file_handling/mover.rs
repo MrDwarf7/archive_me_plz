@@ -21,7 +21,7 @@ impl<'a> Mover<'a> {
     }
 }
 
-impl<'a> Mover<'a> {
+impl Mover<'_> {
     // PERF: This is currently the fastest method for moving files by far -
     // #[tracing::instrument]
     pub async fn par_move_files_copy(&self, files: &[PathBuf]) -> Result<()> {
@@ -90,7 +90,7 @@ impl<'a> Mover<'a> {
 }
 
 // region:		--- helper
-impl<'a> Mover<'a> {
+impl Mover<'_> {
     pub async fn check_files(files_original: &[PathBuf], files_archive: &[PathBuf]) -> Result<()> {
         let original_names = files_original
             .par_iter()
@@ -125,7 +125,7 @@ impl<'a> Mover<'a> {
 // endregion:	--- helper
 
 // region:		--- depr. methods
-impl<'a> Mover<'a> {
+impl Mover<'_> {
     // DEPR:
     pub async fn par_move_files(&self, files: &[PathBuf]) -> Result<()> {
         let archive = Arc::new(self.input.folder_path.clone().join(ARCHIVE_FOLDER_NAME));

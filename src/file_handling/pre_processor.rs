@@ -22,7 +22,7 @@ impl<'a> PreProcessor<'a> {
 }
 
 // #[async_trait]
-impl<'a> PreProcessor<'a> {
+impl PreProcessor<'_> {
     // #[tracing::instrument]
     pub async fn process(&self) -> Result<Vec<PathBuf>> {
         if self.input.folder_path.is_dir() {
