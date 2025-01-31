@@ -1,0 +1,179 @@
+name: "Doc-check & Generation"
+on:
+  push:
+    branches:
+      - master
+      - main
+env:
+  SCCACHE_GHA_ENABLED: true
+  CARGO_INCREMENTAL: 0
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  PROJECT_NAME: archive_me_plz
+  DOCS_BODY: "${{ github.event.release.body }}"
+jobs:
+  docs:
+    name: "Docs - docs"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            gcc: gcc-x86-64-linux-gnu
+            rust: nightly
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            rust: nightly
+    runs-on: ${{ matrix.os }}
+    env:
+      RUSTC_WRAPPER: sccache
+    steps:
+      - name: "Checkout sources"
+        uses: actions/checkout@v4
+      - name: "Install gcc"
+        if: matrix.gcc != ''
+        run: sudo apt update && sudo apt install -yq ${{ matrix.gcc }}
+      - name: "Cache Cargo dependencies"
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-all-crates: true
+      - name: "Setup Rust toolchain"
+        run: rustup toolchain install nightly --profile default --target ${{ matrix.target }} --no-self-update
+      - name: "Setup sccache"
+        uses: mozilla-actions/sccache-action@v0.0.6
+      - name: "Run Cargo Doc checks"
+        run: cargo doc --no-deps --all-features --all --target ${{ matrix.target }} --document-private-items
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+  package-docs-unix:
+    name: "Docs - package-docs-unix"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            gcc: gcc-x86-64-linux-gnu
+            rust: nightly
+    runs-on: ${{ matrix.os }}
+    env:
+      RUSTC_WRAPPER: sccache
+    steps:
+      - name: "Checkout sources"
+        uses: actions/checkout@v4
+      - name: "Install gcc"
+        if: matrix.gcc != ''
+        run: sudo apt update && sudo apt install -yq ${{ matrix.gcc }}
+      - name: "Cache Cargo dependencies"
+        uses: Swatinem/rust-cache@v2
+      - name: "Setup Rust toolchain"
+        run: rustup toolchain install nightly --profile default --target ${{ matrix.target }} --no-self-update
+      - name: "Cache Cargo dependencies"
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-all-crates: true
+      - name: "Setup sccache"
+        uses: mozilla-actions/sccache-action@v0.0.6
+      - name: "Run Cargo Doc generation"
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc --no-deps --all-features --all --target ${{ matrix.target }} --document-private-items
+      - name: "Ensure Zip Installed on Unix"
+        run: |
+          if ! command -v zip &> /dev/null
+          then
+              sudo apt-get install zip
+          fi
+          zip --version
+      - name: "Upload artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PROJECT_NAME }}-${{ matrix.target }}-docs.zip
+          path: target/${{ matrix.target }}/doc/
+          if-no-files-found: 'error'
+          compression-level: '9'
+          overwrite: 'true'
+  package-docs-windows:
+    name: "Docs - package-docs-windows"
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            rust: nightly
+    runs-on: ${{ matrix.os }}
+    env:
+      RUSTC_WRAPPER: sccache
+      CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER: lld-link.exe
+    steps:
+      - name: "Checkout sources"
+        uses: actions/checkout@master
+      - name: "Cache Cargo dependencies"
+        uses: Swatinem/rust-cache@v2
+      - name: "Setup sccache"
+        uses: mozilla-actions/sccache-action@v0.0.6
+      - name: "Install gcc"
+        if: matrix.gcc != ''
+        run: sudo apt update && sudo apt install -yq ${{ matrix.gcc }}
+      - name: "Setup Rust toolchain"
+        run: rustup toolchain install nightly --profile default --target ${{ matrix.target }} --no-self-update
+      - name: "Run Cargo Doc generation"
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc --no-deps --all-features --all --target ${{ matrix.target }} --document-private-items
+      - name: "Upload artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PROJECT_NAME }}-${{ matrix.target }}-docs.zip
+          path: target\${{ matrix.target }}\doc\
+          if-no-files-found: 'error'
+          compression-level: '9'
+          overwrite: 'true'
+  publish-docs:
+    name: "Docs - publish-docs"
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    needs: [ package-docs-unix, package-docs-windows ]
+    steps:
+      - run: |
+          echo 'DOCS_BODY<<EOF' >> $GITHUB_ENV
+          echo "From commit: ${GITHUB_SHA:0:8}" >> $GITHUB_ENV
+          echo "Generated on: $(date -u +"%Y-%m-%d %H:%M") UTC" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+      - name: "Checkout sources"
+        uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        id: artifact-download-step
+        with:
+          merge-multiple: true
+      - name: "Update tag for docs"
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag --force docs && git push --force origin tag docs
+      - name: "Get directory structure"
+        shell: bash
+        run: |
+          sudo apt update
+          echo $PWD
+          echo "tree from single dot"
+          tree -afh .
+          echo \n\n
+          echo "tree from github workspace call"
+          tree -afh ${{ github.workspace }}
+      - name: "Docs - draft"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "docs"
+          # repository: ${{ github.repository }}
+          fail_on_unmatched_files: true
+          draft: true
+          files: |
+            ${{ env.PROJECT_NAME }}.zip
+          name: "[${{ github.ref_name }} Docs]"
+          body: ${{ env.DOCS_BODY }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: false
+  #          body_path: ${{ github.workspace }}-CHANGELOG.txt ## For adding changelog content
