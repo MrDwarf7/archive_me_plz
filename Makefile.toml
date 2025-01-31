@@ -1,77 +1,15 @@
-# If inside a workspace
-[env]
-CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
-CARGO_MAKE_TIME_SUMMARY = true
+extend = [
+    { path = "./build/common-tasks.toml" },
+    { path = "./build/dist-tasks.toml" },
+    { path = "./build/watch-tasks.toml", optional = true }
+]
 
-# Core bare. min
-[tasks.format]
-command = "cargo"
-args = ["fmt", "--", "--emit=files"]
-
-[tasks.clean]
-command = "cargo"
-args = ["clean"]
-
-[tasks.build]
-command = "cargo"
-args = ["build"]
-dependencies = ["format"]
-
-[tasks.build_release]
-command = "cargo"
-args = ["build", "--release"]
-dependencies = ["format"]
-# Core bare. min
-
-# Tests
-[tasks.test]
-command = "cargo"
-args = ["test"]
-
-[tasks.test_all]
-command = "cargo"
-args = ["test", "--all"]
-
-[tasks.run]
-command = "cargo"
-args = ["run"]
-
-[tasks.run_release]
-command = "cargo"
-args = ["run", "--release"]
-
-#### Workspace specific(s)
-
-[tasks.build_workspace]
-command = "cargo"
-args = ["build", "--workspace"]
-dependencies = ["format"]
-
-[tasks.build_release_workspace]
-command = "cargo"
-args = ["build", "--release", "--workspace"]
-dependencies = ["format"]
-
-[tasks.test_workspace]
-command = "cargo"
-args = ["test", "--workspace"]
-
-# -----------------------------------------------------------------------------
-[tasks.watch]
-command = "cargo"
-args = ["watch", "-q", "-c", "-w", "src/", "-x", "run"]
-
-[tasks.watch_release]
-command = "cargo"
-args = ["watch", "-q", "-c", "-w", "src/", "-x", "run --release"]
-# -----------------------------------------------------------------------------
-
-## Full sweeps
+## START Full sweeps/aliases
 [tasks.b]
-run_task = { name = ["format", "build"], parallel = true }
+run_task = { name = ["format", "build"], parallel = false }
 
 [tasks.br]
-run_task = { name = ["format", "build_release"], parallel = true }
+run_task = { name = ["format", "build_release"], parallel = false }
 
 [tasks.a]
 run_task = { name = [
@@ -81,7 +19,14 @@ run_task = { name = [
     "build_release_workspace",
     "build_release",
     "test_all",
-], parallel = true }
+], parallel = false }
+
+
+[tasks.t]
+run_task = { name = ["test"], parallel = false }
+
+[tasks.ta]
+run_task = { name = ["test_all"], parallel = false }
 
 [tasks.r]
 run_task = { name = ["run"], parallel = false }
@@ -90,14 +35,25 @@ run_task = { name = ["run"], parallel = false }
 run_task = { name = ["run_release"], parallel = false }
 
 [tasks.bw]
-run_task = { name = ["build_workspace"], parallel = true }
+run_task = { name = ["build_workspace"], parallel = false }
 
 [tasks.brw]
-run_task = { name = ["build_release_workspace"], parallel = true }
+run_task = { name = ["build_release_workspace"], parallel = false }
+
+[tasks.cl]
+run_task = { name = ["clean"], parallel = false }
+
+[tasks.f]
+run_task = { name = ["format"], parallel = false }
+
+[tasks.envs]
+run_task = { name = "print_all", parallel = false }
+
+[tasks.dist]
+env.PROFILE = "release"
+run_task = { name = ["build_release_dist"], parallel = false }
 
 [tasks.reset]
 run_task = { name = ["clean", "a"], parallel = false }
-
-# , fork = true, cleanup = "clean" 
-# , parallel = true, fork = true, cleanup = "clean"
+# END Full sweeps/aliases
 

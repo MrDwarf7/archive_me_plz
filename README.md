@@ -27,18 +27,18 @@ The qualifier is the first argument passed to the program.
 This is a work in progress, but the idea is to have a way to filter out whole directories based on a condition.
 For example, if you only want to archive directories that have not been accessed in the last 6 months, you could pass in a qualifier that checks the last accessed time of the directory.
 
-----
+---
 
 ### WIP
 
-- [ ] - Modularize and find places for interface usages where applicable.
+- [ ] Modularize and find places for interface usages where applicable.
 
-- [ ] - Add the ability to provide a root starting directory, and to have the qualifer (first argument)
-     be the condition on if a sub-directory get's added to the list of "to be searched/actioned"
-     directories. Note: this will require testing on which way of crawling directories/dir structures is best.
+- [ ] Add the ability to provide a root starting directory, and to have the qualifer (first argument)
+  be the condition on if a sub-directory get's added to the list of "to be searched/actioned"
+  directories. Note: this will require testing on which way of crawling directories/dir structures is best.
 
-- [ ] - Create printer/logger to make passing in a logger easier.
+- [ ] Create printer/logger to make passing in a logger easier.
 
-- [ ] - Create a way to pass in a logger.
+- [ ] Create a way to pass in a logger.
 
-- [ ] - Addition of unit tests and test modules.
+- [ ] Addition of unit tests and test modules.

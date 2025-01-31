@@ -1,0 +1,17 @@
+style_edition = "2024"
+edition = "2024"
+newline_style = "Native"
+
+max_width = 120
+
+fn_params_layout = "Tall"
+fn_call_width = 120
+
+force_multiline_blocks = true
+group_imports = "StdExternalCrate"
+
+imports_granularity = "Module"
+imports_layout = "HorizontalVertical"
+normalize_doc_attributes = true
+reorder_impl_items = true
+reorder_modules = true

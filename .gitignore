@@ -2,10 +2,22 @@
 # will have compiled files and executables
 debug/
 target/
+*config.to*
 
-*data*
-data/
-data/*
+#data/*
+#!data
+data/*.csv
+data/*.xlsx
+data/*.xlsm
+_*_dist/
+
+#
+#scratch/
+
+env*
+*env
+*env*
+*.env*
 
 # Remove Cargo.lock from gitignore if creating an executable, leave it for libraries
 # More information here https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html
@@ -16,3 +28,7 @@ data/*
 
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
+
+.idea/
+.idea/*
+.idea/**/*
