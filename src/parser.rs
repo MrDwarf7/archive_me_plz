@@ -64,7 +64,7 @@ impl UserInput {
 
         let _ = match de_dashed_args.len() {
             1 => {
-                if de_dashed_args[0] == "help" {
+                if de_dashed_args[0] == "help" || de_dashed_args[0] == "h" {
                     warn!("Help requested");
                     UserInput::help_and_exit()
                 } else {
