@@ -1,6 +1,5 @@
 // TODO:
 // Modularize via interface intergration
-
 // Add a walkdir implementation, so it can be used in the processor
 // should then be able to put the tool in the root, and with the "Qualifier" flag,
 // it should be able to run the tool on the root, and all subdirectories
@@ -24,14 +23,16 @@
 // use parser::UserInput;
 // use tracing::{debug, error, info};
 
-use archive_me_plz::*;
+use archive_me_plz::{init_logger, *};
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::ERROR)
-        // .pretty()
-        .init();
+    init_logger().init();
+
+    // let cli = Cli::default();
+    // info!("->> {:<12} - CLI created", "MAIN");
+    // debug!("{:#?}", cli);
+    // todo!();
 
     let args = std::env::args().collect::<Vec<String>>();
     let user_input = UserInput::from_user_input(args)?;
