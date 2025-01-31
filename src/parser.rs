@@ -1,7 +1,11 @@
-use crate::{prelude::HELP_TEXT, Error, Result};
+use std::path::PathBuf;
+use std::str::FromStr;
+
 use chrono::NaiveDate;
-use std::{path::PathBuf, str::FromStr};
 use tracing::{debug, warn};
+
+use crate::prelude::HELP_TEXT;
+use crate::{Error, Result};
 
 pub enum ArgumentIn {
     Amount,
@@ -68,12 +72,14 @@ impl UserInput {
                 }
             }
             2 => return Err(Error::OnlyProvideTwoArguments),
-            3 => de_dashed_args.iter().map(|arg| {
-                user_input.by_index(
-                    de_dashed_args.iter().position(|x| x == arg).unwrap(),
-                    &args[de_dashed_args.iter().position(|x| x == arg).unwrap()],
-                );
-            }),
+            3 => {
+                de_dashed_args.iter().map(|arg| {
+                    user_input.by_index(
+                        de_dashed_args.iter().position(|x| x == arg).unwrap(),
+                        &args[de_dashed_args.iter().position(|x| x == arg).unwrap()],
+                    );
+                })
+            }
             _ => return Err(Error::TooManyArguments),
         }
         .collect::<Vec<_>>();

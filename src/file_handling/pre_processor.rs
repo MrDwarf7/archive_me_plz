@@ -1,12 +1,14 @@
-use crate::{filetypes::Extensions, prelude::ARCHIVE_FOLDER_NAME, Error, Result, UserInput};
+use std::ffi::OsStr;
+use std::path::{Path, PathBuf};
+
 use chrono::Utc;
 use futures::stream::{self, StreamExt};
-use std::{
-    ffi::OsStr,
-    path::{Path, PathBuf},
-};
 use tokio::io::AsyncWriteExt;
 use tracing::{debug, info, warn};
+
+use crate::filetypes::Extensions;
+use crate::prelude::ARCHIVE_FOLDER_NAME;
+use crate::{Error, Result, UserInput};
 
 #[derive(Debug, PartialEq)]
 pub struct PreProcessor<'a> {
@@ -28,13 +30,15 @@ impl PreProcessor<'_> {
         if self.input.folder_path.is_dir() {
             let files = self.process_dir().await;
             match files {
-                Ok(files) => match files.len() {
-                    0 => {
-                        debug!("No files found in given directory");
-                        Err(Error::NoFilesFoundInGivenDir)
+                Ok(files) => {
+                    match files.len() {
+                        0 => {
+                            debug!("No files found in given directory");
+                            Err(Error::NoFilesFoundInGivenDir)
+                        }
+                        _ => Ok(files),
                     }
-                    _ => Ok(files),
-                },
+                }
                 Err(e) => {
                     debug!("Error: {:?}", e);
                     Err(e)
@@ -77,10 +81,7 @@ impl PreProcessor<'_> {
             }
         });
 
-        info!(
-            "Total files processed via PreProcessor<'a>: {:?}",
-            files.len()
-        );
+        info!("Total files processed via PreProcessor<'a>: {:?}", files.len());
         // println!("Files processed: {:?}", files.len());
 
         if files.len() >= self.input.required_min_files {
@@ -93,10 +94,7 @@ impl PreProcessor<'_> {
 
             Ok(files.clone())
         } else {
-            warn!(
-                "Failure during files.len() >= self.input.required_min_files: {:?}",
-                files.len()
-            );
+            warn!("Failure during files.len() >= self.input.required_min_files: {:?}", files.len());
             Err(Error::NoFilesOutsideOfGivenBounds)
         }
     }
@@ -140,9 +138,7 @@ impl PreProcessor<'_> {
 
         let modified_dt = metadata.modified()?;
 
-        let modified_date = chrono::DateTime::<Utc>::from(modified_dt)
-            .naive_utc()
-            .date();
+        let modified_date = chrono::DateTime::<Utc>::from(modified_dt).naive_utc().date();
 
         debug!("Modified date: {:?}", modified_date);
 

@@ -1,14 +1,15 @@
 #![allow(dead_code)]
 
-use crate::prelude::ARCHIVE_FOLDER_NAME;
-use crate::{Error, Result, UserInput};
-
-use futures::{stream, StreamExt};
-use rayon::prelude::*;
 use std::path::PathBuf;
 use std::sync::Arc;
+
+use futures::{StreamExt, stream};
+use rayon::prelude::*;
 use tokio::fs::create_dir_all;
 use tracing::{debug, error, info};
+
+use crate::prelude::ARCHIVE_FOLDER_NAME;
+use crate::{Error, Result, UserInput};
 
 #[derive(Clone, Debug)]
 pub struct Mover<'a> {
@@ -53,12 +54,9 @@ impl Mover<'_> {
                                 // REFACTOR: this shouldn't check the entire
                                 // list of files in the dir every single time
                                 // it moves a file, check that after we finish iterating
-                                match Self::check_files(
-                                    &[file.to_owned()],
-                                    &[archive_path.to_owned()],
-                                )
-                                .await
-                                .is_ok()
+                                match Self::check_files(&[file.to_owned()], &[archive_path.to_owned()])
+                                    .await
+                                    .is_ok()
                                 {
                                     true => Ok(tokio::fs::remove_file(file).await),
                                     false => Err(Error::CopiedFilesDontMatch),
