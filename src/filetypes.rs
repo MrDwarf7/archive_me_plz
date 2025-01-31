@@ -9,6 +9,8 @@ pub enum Extensions {
     Txt,
     Tmp,
     Eml,
+    Msg,
+    Pdf,
 }
 
 impl Extensions {
@@ -21,6 +23,8 @@ impl Extensions {
             Extensions::Txt,
             Extensions::Tmp,
             Extensions::Eml,
+            Extensions::Msg,
+            Extensions::Pdf,
         ]
     }
 
@@ -35,6 +39,8 @@ impl Extensions {
             "txt" => Some(Extensions::Txt),
             "tmp" => Some(Extensions::Tmp),
             "eml" => Some(Extensions::Eml),
+            "msg" => Some(Extensions::Msg),
+            "pdf" => Some(Extensions::Pdf),
             _ => None,
         }
     }
