@@ -1,20 +1,21 @@
-cargo-features = ["codegen-backend"]
+cargo-features = [ "codegen-backend", "profile-rustflags", "trim-paths" ]
+# cargo-features = ["codegen-backend"]
 
 [package]
-name = "archive_me_plz"
-authors = ["MrDwarf7", "Blake B. <github.com/MrDwarf7>"]
-version = "1.0.0"
-edition = "2024"
+name        = "archive_me_plz"
+authors     = [ "MrDwarf7", "Blake B. <github.com/MrDwarf7>" ]
+version     = "1.0.0"
+edition     = "2024"
 description = "A simple CLI tool to mass archive files and directories"
-license = "MIT"
-readme = "README.md"
+license     = "MIT"
+readme      = "README.md"
 
 build = "build.rs"
 
 [package.metadata.winresource]
 OriginalFilename = "archive_me_plz.exe"
-FileDescription = "A simple CLI tool to mass archive files and directories"
-LegalCopyright = "Copyright © 2025 by Blake B. @github.com/MrDwarf7"
+FileDescription  = "A simple CLI tool to mass archive files and directories"
+LegalCopyright   = "Copyright © 2025 by Blake B. @github.com/MrDwarf7"
 #CompanyName = "https://github.com/MrDwarf7"
 
 # For running the main server as a watch call
@@ -25,43 +26,83 @@ windres = "0.2"
 
 [build-dependencies]
 winresource = "0.1.19"
-windres = "0.2.2"
-winapi = { version = "0.3.9" }
+windres     = "0.2.2"
+winapi      = { version = "0.3.9" }
 
 [dependencies]
 anstyle = "1.0.10"
-chrono = "0.4.39"
-clap = { version = "4.5.23", features = ["derive"] }
+chrono  = "0.4.39"
+clap    = { version = "4.5.23", features = [ "derive" ] }
 futures = "0.3.31"
 
-rayon = "1.10.0"
-thiserror = "2.0.7"
-tokio = { version = "1.42.0", features = ["full", "tracing"] }
-tokio-stream = { version = "0.1.17", features = ["full"] }
-tracing = "0.1.41"
+rayon              = "1.10.0"
+thiserror          = "2.0.7"
+tokio              = { version = "1.42.0", features = [ "full", "tracing" ] }
+tokio-stream       = { version = "0.1.17", features = [ "full" ] }
+tracing            = "0.1.41"
 tracing-subscriber = "0.3.19"
+# crossbeam          = { version = "0.8.4" }
 
-[profile.dev.package."*"]
-opt-level = 3
-codegen-units = 1
+######################################################################################################################################################
+######################################################################################################################################################
 
 [profile.dev]
-opt-level = 1
+opt-level     = 1
 codegen-units = 256
-incremental = true
+incremental   = true
 
 codegen-backend = "cranelift"
 
+debug            = "line-tables-only"
+debug-assertions = true
+overflow-checks  = true
+strip            = "none"             # true | false | "none" | "symbols" | "debuginfo" ## Leave off @ w. THIS IS NOT OBFUSCATION.
+panic            = "abort"            # "unwind" | "abort"
+lto              = "off"              # "false" ### # true | false | "off" | "thin" | "fat" ## Can't use with cranelift yet
+trim-paths       = "none"
+# tune-cpu         = "native"
+
+######################################################################################################################################################
+
 [profile.release]
-opt-level = 3
+opt-level     = 3
 codegen-units = 1
-debug = "none"
+incremental   = true
+
+codegen-backend = "cranelift" # May break deps.
+
+debug            = "none"
 debug-assertions = false
-incremental = true
+overflow-checks  = false                       # debatable
+strip            = "symbols"                   # true | false | "none" | "symbols" | "debuginfo" ## Leave off @ w. THIS IS NOT OBFUSCATION.
+panic            = "unwind"
+lto              = "off"                       # true | false | "off" | "thin" | "fat" ## Can't use with cranelift yet
+trim-paths       = [ "diagnostics", "object" ]
+# tune-cpu         = "native"
 
-# trim-paths = "all"
-#rustflags = ["-Zthreads=16" ]
+######################################################################################################################################################
+######################################################################################################################################################
 
-# strip = "symbols" # Leave off @ w
-# lto = "fat" ## Can't use with cranelift yet
-# panic = "unwind"
+
+[profile.dev.package."*"]
+inherits        = "release"
+codegen-backend = "cranelift" #### May break deps. for external crates
+
+[profile.release.package."*"]
+inherits        = "release"
+codegen-backend = "cranelift" #### May break deps. for external crates??????
+
+######################################################################################################################################################
+######################################################################################################################################################
+
+# Lint levels / priorities/priority
+# 0 = forbid
+# 1 = deny
+# 2 = warn
+# 3 = allow
+[lints.rust]
+# unsafe_code = { level = "forbid", priority = 0 }
+# unsafe_code = "forbid"
+
+[lints.clippy]
+enum_glob_use = { level = "warn", priority = 2 }
