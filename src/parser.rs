@@ -32,8 +32,8 @@ impl FromStr for ArgumentIn {
 #[derive(Debug, Default, PartialEq)]
 pub struct UserInput {
     pub required_min_files: usize,
-    pub oldest_to_keep: NaiveDate,
-    pub folder_path: PathBuf,
+    pub oldest_to_keep:     NaiveDate,
+    pub folder_path:        PathBuf,
 }
 
 impl UserInput {

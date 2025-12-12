@@ -13,7 +13,7 @@ use crate::{Error, Result, UserInput};
 #[derive(Debug, PartialEq)]
 pub struct PreProcessor<'a> {
     input: &'a UserInput,
-    ext: Vec<Extensions>,
+    ext:   Vec<Extensions>,
 }
 
 impl<'a> PreProcessor<'a> {

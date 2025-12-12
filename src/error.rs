@@ -39,9 +39,7 @@ pub enum Error {
     #[error("No files found in given directory.")]
     NoFilesFoundInGivenDir,
 
-    #[error(
-        "No files found in given directory, no files to move, or no files meet given criteria."
-    )]
+    #[error("No files found in given directory, no files to move, or no files meet given criteria.")]
     NoFilesOutsideOfGivenBounds,
 }
 
